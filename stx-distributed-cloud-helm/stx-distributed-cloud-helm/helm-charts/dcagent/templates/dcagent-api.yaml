@@ -1,0 +1,93 @@
+{{/*
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+*/}}
+
+{{- define "dcagentApiLivenessProbeTemplate" }}
+tcpSocket:
+  port: {{ tuple "dcagent" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+{{- end }}
+
+{{- if .Values.manifests.dcagent_api }}
+{{- $envAll := . }}
+
+{{- $mounts_dcagent_api := .Values.pod.mounts.api.dcagent }}
+{{- $mounts_dcagent_api_init := .Values.pod.mounts.api.init_container }}
+
+{{- $serviceAccountName := "dcagent" }}
+{{ tuple $envAll "api" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dcagent-api
+  labels:
+{{ tuple $envAll "dcagent" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+spec:
+  {{- if not .Values.pod.autoscaling.enabled }}
+  replicas: {{ .Values.pod.replicas.api }}
+  {{- end }}
+  selector:
+    matchLabels:
+{{ tuple $envAll "dcagent" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 6 }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      {{- with .Values.pod.annotations.api }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+{{ tuple $envAll "dcagent" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      initContainers:
+{{ tuple $envAll "api" $mounts_dcagent_api_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      containers:
+        - name: dcagent
+{{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+          volumeMounts:
+            - name: dcagent-bin
+              mountPath: /tmp/dcagent-api.sh
+              subPath: dcagent-api.sh
+              readOnly: true
+            - name: dcagent-etc
+              mountPath: /etc/dcagent/dcagent.conf
+              subPath: dcagent.conf
+              readOnly: true
+            - name: dcagent-etc
+              mountPath: /etc/dcagent/logging.conf
+              subPath: logging.conf
+              readOnly: true
+{{ if $mounts_dcagent_api.volumeMounts }}{{ toYaml $mounts_dcagent_api.volumeMounts | indent 12 }}{{ end }}
+{{- dict "enabled" .Values.manifests.certificates "name" .Values.secrets.tls.dcagent.api.public | include "helm-toolkit.snippets.tls_volume_mount" | indent 12 }}
+{{ dict "envAll" . "component" "api" "container" "default" "type" "liveness" "probeTemplate" (include "dcagentApiLivenessProbeTemplate" . | fromYaml) | include "helm-toolkit.snippets.kubernetes_probe" | indent 10 }}
+          command:
+            - /tmp/dcagent-api.sh
+          image: "{{ .Values.images.tags.dcagent }}"
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ tuple "dcagent" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+              protocol: TCP
+{{ tuple $envAll "dcagent" | include "helm-toolkit.snippets.kubernetes_image_pull_secrets" | indent 6 }}
+      nodeSelector:
+        {{ .Values.labels.dcagent.node_selector_key }}: {{ .Values.labels.dcagent.node_selector_value }}
+{{ if $envAll.Values.pod.tolerations.dcagent.enabled }}
+{{ tuple $envAll "dcagent" | include "helm-toolkit.snippets.kubernetes_tolerations" | indent 6 }}
+{{ end }}
+      affinity:
+        {{ tuple $envAll "dcagent" "api" | include "helm-toolkit.snippets.kubernetes_pod_anti_affinity" | indent 8 }}
+      volumes:
+        - name: dcagent-etc
+          secret:
+            secretName: dcagent-etc
+            defaultMode: 0644
+        - name: dcagent-bin
+          configMap:
+            name: dcagent-bin
+            defaultMode: 0755
+{{ if $mounts_dcagent_api.volumes }}{{ toYaml $mounts_dcagent_api.volumes | indent 8 }}{{ end }}
+{{- dict "enabled" .Values.manifests.certificates "name" .Values.secrets.tls.dcagent.api.public | include "helm-toolkit.snippets.tls_volume" | indent 8 }}
+{{- end }}

@@ -1,0 +1,29 @@
+{{/*
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+*/}}
+
+{{- if .Values.manifests.service_dcagent }}
+{{- $envAll := . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ tuple "dcagent" "internal" . | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup" }}
+spec:
+  ports:
+  - name: dcmanger-port
+    port: {{ .Values.network.dcagent.port }}
+    {{ if .Values.network.dcagent.node_port.enabled }}
+    nodePort: {{ .Values.network.dcagent.node_port.port }}
+    {{ end }}
+  selector:
+{{ tuple $envAll "dcagent" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+  {{ if .Values.network.dcagent.node_port.enabled }}
+  type: NodePort
+  {{ if .Values.network.dcagent.external_policy_local }}
+  externalTrafficPolicy: Local
+  {{ end }}
+  {{ end }}
+{{- end }}

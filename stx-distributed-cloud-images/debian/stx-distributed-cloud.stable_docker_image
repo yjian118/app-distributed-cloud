@@ -3,7 +3,9 @@ LABEL=stx-distributed-cloud
 PROJECT=infra
 PROJECT_REPO=nil
 DIST_REPOS="OS"
-DIST_PACKAGES="fm-common"
+# DIST_PACKAGES are binary
+DIST_PACKAGES="software software-client fm-common python3-gi"
+# PIP_PACKAGES are python
 PIP_PACKAGES="
         distributedcloud \
         tsconfig \

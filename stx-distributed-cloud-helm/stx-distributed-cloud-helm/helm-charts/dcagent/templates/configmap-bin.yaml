@@ -1,0 +1,19 @@
+{{/*
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+*/}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dcagent-bin
+data:
+  dcagent-api.sh: |
+{{ tuple "bin/_dcagent-api.sh.tpl" . | include "helm-toolkit.utils.template" | indent 4 }}
+  ks-service.sh: |
+{{- include "helm-toolkit.scripts.keystone_service" . | indent 4 }}
+  ks-endpoints.sh: |
+{{- include "helm-toolkit.scripts.keystone_endpoints" . | indent 4 }}
+  ks-user.sh: |
+{{- include "helm-toolkit.scripts.keystone_user" . | indent 4 }}

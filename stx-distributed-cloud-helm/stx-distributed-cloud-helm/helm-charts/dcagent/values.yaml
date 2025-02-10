@@ -1,0 +1,321 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+# Default values for dcagent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+images:
+  tags:
+    dcagent: docker.io/starlingx/stx-distributed-cloud:master-debian-stable-latest
+    ks_user: docker.io/starlingx/stx-distributed-cloud:master-debian-stable-latest
+    ks_service: docker.io/starlingx/stx-distributed-cloud:master-debian-stable-latest
+    ks_endpoints: docker.io/starlingx/stx-distributed-cloud:master-debian-stable-latest
+    dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.1
+  pullPolicy: IfNotPresent
+  local_registry:
+    active: false
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+labels:
+  dcagent:
+    node_selector_key: starlingx.io/subcloud
+    node_selector_value: enabled
+  job:
+    node_selector_key: starlingx.io/subcloud
+    node_selector_value: enabled
+
+network:
+  dcagent:
+    ingress:
+      public: true
+      classes:
+        namespace: "nginx"
+        cluster: "nginx-cluster"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    port: 8325
+    node_port:
+      enabled: false
+      port: 30325
+    external_policy_local: false
+
+ingress:
+  enabled: false
+  annotations: {}
+  paths: []
+  hosts:
+    - dcagent-api
+  tls: []
+
+volume: []
+
+conf:
+  dcagent:
+    DEFAULT:
+      log_config_append: /etc/dcagent/logging.conf
+      auth_strategy: keystone
+      use_usm: False
+      workers: 1
+    database:
+      connection_recycle_time: 3600
+      max_pool_size: 105
+      max_overflow: 100
+    keystone_authtoken:
+      auth_uri: http://controller.internal:5000
+      auth_version: v3
+      auth_type: password
+      http_connect_timeout: 15
+      http_request_max_retries: 3
+      region_name: RegionOne
+      auth_url: http://controller.internal:5000
+      project_name: services
+      user_domain_name: Default
+      project_domain_name: Default
+    cache:
+      auth_uri: http://controller.internal:5000/v3
+      admin_tenant: admin
+    endpoint_cache:
+      auth_uri: http://controller.internal:5000/v3
+      auth_plugin: password
+      project_name: services
+      user_domain_name: Default
+      project_domain_name: Default
+      http_connect_timeout: 15
+
+  logging:
+    loggers:
+      keys:
+        - root
+        - dcagent
+    handlers:
+      keys:
+        - stdout
+        - stderr
+        - "null"
+    formatters:
+      keys:
+        - context
+        - default
+    logger_root:
+      level: WARNING
+      handlers: 'null'
+    logger_dcagent:
+      level: INFO
+      handlers:
+        - stdout
+      qualname: dcagent
+    logger_eventletwsgi:
+      level: WARNING
+      handlers: stderr
+      qualname: eventlet.wsgi.server
+    logger_keystoneauth:
+      level: ERROR
+      handlers: stderr
+      qualname: keystoneauth
+    logger_sqlalchemy:
+      level: WARNING
+      handlers: stderr
+      qualname: sqlalchemy
+    handler_null:
+      class: logging.NullHandler
+      formatter: default
+      args: ()
+    handler_stdout:
+      class: StreamHandler
+      args: (sys.stdout,)
+      formatter: context
+    handler_stderr:
+      class: StreamHandler
+      args: (sys.stderr,)
+      formatter: context
+    formatter_context:
+      class: oslo_log.formatters.ContextFormatter
+    formatter_default:
+      format: "%(message)s"
+
+dependencies:
+  static:
+    api:
+      jobs:
+        - dcagent-ks-user
+        - dcagent-ks-service
+        - dcagent-ks-endpoints
+    ks_endpoints:
+      jobs:
+        - dcagent-ks-user
+        - dcagent-ks-service
+      # services:
+      #   - endpoint: internal
+      #     service: identity
+    ks_service:
+      # services:
+      #  - endpoint: internal
+      #    service: identity
+    ks_user:
+      # services:
+      #  - endpoint: internal
+      #    service: identity
+
+manifests:
+  certificates: false
+  configmap_bin: true
+  dcagent_api: true
+  ingress: true
+  job_ks_user: true
+  job_ks_service: true
+  job_ks_endpoints: true
+  secret_etc: true
+  secret_ingress_tls: false
+  secret_keystone: true
+  service_dcagent: true
+  service_ingress: true
+
+endpoints:
+  cluster_domain_suffix: cluster.local
+  identity:
+    name: keystone
+    auth:
+      admin:
+        username: admin
+        password: password
+        region_name: RegionOne
+        project_name: admin
+        user_domain_name: Default
+        project_domain_name: Default
+      dcagent:
+        role: admin
+        username: dcagent
+        password: password
+        region_name: RegionOne
+        project_name: services
+        user_domain_name: Default
+        project_domain_name: Default
+    hosts:
+      default: keystone-api
+      public: keystone
+    host_fqdn_override:
+      default: controller.internal
+    path:
+      default: /v3
+    scheme:
+      default: http
+    port:
+      api:
+        default: 5000
+        internal: 5000
+  dcagent:
+    name: dcagent
+    hosts:
+      default: dcagent-api
+      public: dcagent
+    host_fqdn_override:
+      default: null
+    path:
+      default: /v1
+    scheme:
+      default: 'http'
+    port:
+      api:
+        default: 8325
+        public: 80
+
+pod:
+  probes:
+    api:
+      default:
+        liveness:
+          enabled: True
+          params:
+            initialDelaySeconds: 120
+            periodSeconds: 90
+            timeoutSeconds: 70
+  user:
+    api:
+      uid: 0
+  affinity:
+    anti:
+      type:
+        default: preferredDuringSchedulingIgnoredDuringExecution
+      topologyKey:
+        default: kubernetes.io/hostname
+  annotations: {}
+  tolerations:
+    dcagent:
+      enabled: false
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+  mounts:
+    api:
+      init_container: null
+      dcagent:
+  autoscaling:
+    enabled: false
+  replicas:
+    api: 1
+  lifecycle:
+    upgrades:
+      deployments:
+        revision_history: 3
+        pod_replacement_strategy: RollingUpdate
+        rolling_update:
+          max_unavailable: 1
+          max_surge: 3
+      daemonsets:
+        pod_replacement_strategy: RollingUpdate
+        compute:
+          enabled: true
+          min_ready_seconds: 0
+          max_unavailable: 1
+    disruption_budget:
+        dcagent:
+        min_available: 0
+    termination_grace_period:
+        dcagent:
+        timeout: 30
+  resources:
+    enabled: false
+    api:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "1024Mi"
+        cpu: "2000m"
+    jobs:
+      ks_endpoints:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+
+secrets:
+  identity:
+    admin: dcagent-keystone-admin
+    dcagent: dcagent-keystone-user
+  tls:
+    dcagent:
+      api:
+        public: dcagent-api-tls-public
+        internal: dcagent-api-tls-internal

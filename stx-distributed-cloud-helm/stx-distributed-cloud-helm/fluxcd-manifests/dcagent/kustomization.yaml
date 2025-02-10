@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2025 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+namespace: distributed-cloud
+resources:
+  - helmrelease.yaml
+secretGenerator:
+  - name: dcagent-static-overrides
+    files:
+      - dcagent-static-overrides.yaml
+  - name: dcagent-system-overrides
+    files:
+      - dcagent-system-overrides.yaml
+generatorOptions:
+  disableNameSuffixHash: true
