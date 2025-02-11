@@ -9,22 +9,10 @@ pod:
     default:
       - name: default-registry-key
   tolerations:
-    dcmanager:
+    dcagent:
       enabled: true
 
 endpoints:
-  oslo_db:
-    auth:
-      admin:
-        username: admin-dcagent
-      dcagent:
-        username: admin-dcagent
-  oslo_messaging:
-    auth:
-      admin:
-        username: guest
-      dcmanager:
-        username: guest
   identity:
     auth:
       admin:
