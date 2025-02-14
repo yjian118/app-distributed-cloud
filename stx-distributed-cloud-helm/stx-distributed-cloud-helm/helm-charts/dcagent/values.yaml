@@ -88,10 +88,11 @@ conf:
     endpoint_cache:
       auth_uri: http://controller.internal:5000/v3
       auth_plugin: password
+      http_connect_timeout: 15
+      region_name: RegionOne
       project_name: services
       user_domain_name: Default
       project_domain_name: Default
-      http_connect_timeout: 15
 
   logging:
     loggers:
@@ -212,7 +213,7 @@ endpoints:
       default: http
     port:
       api:
-        default: 80
+        default: 5000
         internal: 5000
   dcagent:
     name: dcagent
@@ -315,3 +316,4 @@ secrets:
       api:
         public: dcagent-api-tls-public
         internal: dcagent-api-tls-internal
+  caCertSecret: ""
