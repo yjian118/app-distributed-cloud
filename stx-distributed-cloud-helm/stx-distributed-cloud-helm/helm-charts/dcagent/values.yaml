@@ -316,4 +316,6 @@ secrets:
       api:
         public: dcagent-api-tls-public
         internal: dcagent-api-tls-internal
-  caCertSecret: ""
+
+ca_certificates:
+  root_ca: root-ca

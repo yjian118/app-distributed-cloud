@@ -48,11 +48,8 @@ spec:
         - name: dcagent
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           env:
-          - name: SSL_CERT_FILE
-            value: /etc/ssl/certs/ca-certificates.crt
-          envFrom:
-          - secretRef:
-              name: dcagent-keystone-admin
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/ca-certificates.crt
           volumeMounts:
             - name: dcagent-bin
               mountPath: /tmp/dcagent-api.sh
@@ -66,9 +63,9 @@ spec:
               mountPath: /etc/dcagent/logging.conf
               subPath: logging.conf
               readOnly: true
-{{- if .Values.secrets.caCertSecret }}
-            - name: ca-certs
-              mountPath: /etc/pki/ca-trust/source/anchors/dcagent-local-ca.crt
+{{- if .Values.ca_certificates.root_ca }}
+            - name: root-ca
+              mountPath: /usr/local/share/ca-certificates/root-ca.crt
               subPath: ca.crt
               readOnly: true
 {{- end }}
@@ -100,10 +97,10 @@ spec:
           configMap:
             name: dcagent-bin
             defaultMode: 0755
-{{- if .Values.secrets.caCertSecret }}
-        - name: ca-certs
+{{- if .Values.ca_certificates.root_ca }}
+        - name: root-ca
           secret:
-            secretName: {{ .Values.secrets.caCertSecret }}
+            secretName: {{ .Values.ca_certificates.root_ca }}
             defaultMode: 0644
 {{- end }}
 {{ if $mounts_dcagent_api.volumes }}{{ toYaml $mounts_dcagent_api.volumes | indent 8 }}{{ end }}
