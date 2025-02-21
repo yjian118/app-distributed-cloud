@@ -4,7 +4,7 @@ PROJECT=infra
 PROJECT_REPO=nil
 DIST_REPOS="OS"
 # DIST_PACKAGES are binary
-DIST_PACKAGES="software software-client fm-common python3-gi"
+DIST_PACKAGES="vim procps iputils-ping dnsutils curl openssl software software-client fm-common python3-gi"
 # PIP_PACKAGES are python
 PIP_PACKAGES="
         distributedcloud \
@@ -48,4 +48,3 @@ CUSTOMIZATION="\
     pip3 uninstall -y oslo.service && pip3 install 'oslo.service'
     pip3 uninstall -y keystoneauth1 && \
     pip3 uninstall -y python-keystoneclient \
-"
