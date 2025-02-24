@@ -176,11 +176,17 @@ conf:
     DEFAULT:
       log_config_append: /etc/dcagent/logging.conf
       auth_strategy: keystone
-      use_usm: False
       workers: 1
     keystone_authtoken:
-      auth_version: v3
+      auth_uri: http://controller.internal:5000
+      auth_url: http://controller.internal:5000
       auth_type: password
+      region_name: ${OS_REGION_NAME}
+      username: dcagent
+      password: ${DCAGENT_KS_PASSWORD}
+      project_name: services
+      user_domain_name: Default
+      project_domain_name: Default
     endpoint_cache:
       auth_uri: http://controller.internal:5000/v3
       auth_plugin: password

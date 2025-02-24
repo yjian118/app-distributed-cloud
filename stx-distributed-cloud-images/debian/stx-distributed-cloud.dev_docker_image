@@ -45,6 +45,6 @@ CUSTOMIZATION="\
     pip3 uninstall -y sqlalchemy && pip3 install 'sqlalchemy<1.4' && \
     pip3 uninstall -y oslo.context && pip3 install 'oslo.context<4.0' && \
     pip3 uninstall -y oslo.db && pip3 install 'oslo.db<9.0' && \
-    pip3 uninstall -y oslo.service && pip3 install 'oslo.service'
     pip3 uninstall -y keystoneauth1 && \
     pip3 uninstall -y python-keystoneclient \
+"
