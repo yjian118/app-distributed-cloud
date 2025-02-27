@@ -294,9 +294,7 @@ kubectl get endpoints dcagent-api -n distributed-cloud
 openstack token issue
 
 # Set TOEKN=token ID get from the previous step
-curl -i http://<endpoint>/v1.0/subclouds -X GET -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token:${TOKEN}"
-```
-
+curl -v http://<endpoint>/v1/dcaudit -X PATCH -H "Content-Type: application/json" -H "X-Auth-Token:$token" -d '{"base_audit": ""}'
 ```
 
 ## Distributed Cloud Helm Deployment (manual)
@@ -319,3 +317,60 @@ kubectl -n distributed-cloud get secret dcagent-keystone-admin --output="jsonpat
 kubectl -n distributed-cloud logs -l application=dcagent,component=api
 
 helm status --show-resources dcagent --namespace distributed-cloud
+
+
+# Expose the endpoint to http://controller:8325/dca
+
+Steps to Configure TCP/UDP Services in Ingress-NGINX
+Create the ConfigMap in kube-system
+Since your ingress controller is in kube-system, create the ConfigMap there:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-services
+  namespace: kube-system
+data:
+  "8325": "distributed-cloud/dcagent-api:8325"
+```
+
+Apply it:
+```bash
+kubectl apply -f tcp-services.yaml
+```
+
+Modify the Ingress NGINX Deployment to Use the ConfigMap
+You need to update the ingress controller to reference this ConfigMap. Find the deployment:
+
+```bash
+kubectl get deployment -n kube-system -l app.kubernetes.io/name=ingress-nginx
+```
+
+Then edit it:
+```bash
+kubectl edit deployment -n kube-system <your-ingress-nginx-controller>
+```
+
+In the args section of the containers list, add:
+```yaml
+args:
+  - --tcp-services-configmap=kube-system/tcp-services
+```
+Save and exit.
+
+Restart the Ingress Controller
+
+```bash
+kubectl rollout restart deployment -n kube-system <your-ingress-nginx-controller>
+```
+
+Verify That Port 8325 is Now Open Check if the ingress controller is listening on port 8325:
+
+```bash
+kubectl logs -n kube-system -l app.kubernetes.io/name=ingress-nginx | grep "8325"
+```
+
+```bash
+curl -v http://controller:8325/v1/dcaudit -X PATCH -H "Content-Type: application/json" -H "X-Au
+```

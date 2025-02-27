@@ -55,11 +55,12 @@ network:
     external_policy_local: false
 
 ingress:
+  className: nginx
   enabled: false
   annotations: {}
   paths: []
   hosts:
-    - dcagent-api
+    - controller
   tls: []
 
 volume: []
