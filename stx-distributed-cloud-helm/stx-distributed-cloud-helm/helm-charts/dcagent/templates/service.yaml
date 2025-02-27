@@ -13,7 +13,7 @@ metadata:
   name: {{ tuple "dcagent" "internal" . | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup" }}
 spec:
   ports:
-  - name: dcmanger-port
+  - name: dcagent-port
     port: {{ .Values.network.dcagent.port }}
     {{ if .Values.network.dcagent.node_port.enabled }}
     nodePort: {{ .Values.network.dcagent.node_port.port }}

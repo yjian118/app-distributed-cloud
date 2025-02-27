@@ -21,3 +21,8 @@ behavior:
     triggers:
     - type: host-label-assign
     - type: host-modify
+
+disabled_charts:
+  - dcmanager
+  - dcorch
+  - dcagent
