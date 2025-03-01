@@ -12,3 +12,4 @@ resources:
   - dcmanager
   - dcorch
   - dcagent
+  - dc-ingress-nginx

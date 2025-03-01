@@ -9,11 +9,13 @@
 HELM_CHART_DCMANAGER = 'dcmanager'
 HELM_CHART_DCORCH = 'dcorch'
 HELM_CHART_DCAGENT = 'dcagent'
+HELM_CHART_DC_INGRESS_NGINX = 'dc-ingress-nginx'
 
 # FluxCD
 FLUXCD_HELM_RELEASE_DCMANAGER = 'dcmanager'
 FLUXCD_HELM_RELEASE_DCORCH = 'dcorch'
 FLUXCD_HELM_RELEASE_DCAGENT = 'dcagent'
+FLUXCD_HELM_RELEASE_DC_INGRESS_NGINX = 'dc-ingress-nginx'
 
 # Namespace to deploy the application
 HELM_NS_DISTCLOUD = 'distributed-cloud'

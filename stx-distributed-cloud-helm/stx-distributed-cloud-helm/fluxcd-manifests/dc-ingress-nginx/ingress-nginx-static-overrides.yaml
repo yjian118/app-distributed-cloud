@@ -1,0 +1,103 @@
+#
+# Copyright (c) 2025 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+imagePullSecrets: [{"name": "default-registry-key"}]
+controller:
+  # This fixes CVE-2023-5044
+  enableAnnotationValidations: true
+  kind: DaemonSet
+  image:
+    digest: ""
+    repository: registry.k8s.io/ingress-nginx/controller
+    tag: v1.11.1
+  daemonset:
+    useHostPort: false
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  config:
+    # https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/
+    nginx-status-ipv4-whitelist: 0.0.0.0/0
+    # See https://bugs.launchpad.net/starlingx/+bug/1823803
+    # Note quotes are necessary.
+    worker-processes: '1'
+    # This fixes CVE-2022-4886: https://github.com/kubernetes/ingress-nginx/issues/10570
+    strict-validate-path-type: true
+  scope:
+    enabled: false
+  ingressClassResource:
+    name: nginx-distributed-cloud
+    enabled: true
+    default: false
+    controllerValue: "distributed-cloud/ingress-nginx"
+  extraArgs:
+    controller-class: "distributed-cloud/ingress-nginx"
+  service:
+    type: LoadBalancer
+    ports:
+      http: 80
+      https: 443
+      dcagent-api: 8325
+    targetPorts:
+      http: http
+      https: https
+      dcagent: dcagent-api
+    nodePorts:
+      http: 30080
+      https: 30443
+      dcagent: 8325
+  containerPort:
+    http: 80
+    https: 443
+    dcagent-api: 8325
+  livenessProbe:
+    timeoutSeconds: 5
+    initialDelaySeconds: 30
+  resources:
+    requests:
+      cpu: 0
+      memory: 0
+  readinessProbe:
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+  admissionWebhooks:
+    # default port 8443 conflicts with lighttpd using https
+    port: 5443
+    patch:
+      image:
+        digest: ""
+        repository: registry.k8s.io/ingress-nginx/kube-webhook-certgen
+        tag: v1.4.1
+      tolerations:
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+    createSecretJob:
+      resources:
+        requests:
+          cpu: 0
+    patchWebhookJob:
+      resources:
+        requests:
+          cpu: 0
+defaultBackend:
+  image:
+    digest: ""
+    repository: registry.k8s.io/defaultbackend-amd64
+    tag: "1.5"
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  service:
+    type: ""
+  resources:
+    requests:
+      cpu: 0
+  livenessProbe:
+    initialDelaySeconds: 30
+  readinessProbe:
+    initialDelaySeconds: 30

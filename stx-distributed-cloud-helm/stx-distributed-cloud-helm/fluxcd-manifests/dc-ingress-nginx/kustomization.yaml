@@ -1,0 +1,19 @@
+
+#
+# Copyright (c) 2025 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+namespace: distributed-cloud
+resources:
+  - helmrelease.yaml
+secretGenerator:
+  - name: ingress-nginx-static-overrides
+    files:
+      - ingress-nginx-static-overrides.yaml
+  - name: ingress-nginx-system-overrides
+    files:
+      - ingress-nginx-system-overrides.yaml
+generatorOptions:
+  disableNameSuffixHash: true
