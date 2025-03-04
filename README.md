@@ -318,59 +318,40 @@ kubectl -n distributed-cloud logs -l application=dcagent,component=api
 
 helm status --show-resources dcagent --namespace distributed-cloud
 
-
-# Expose the endpoint to http://controller:8325/dca
-
-Steps to Configure TCP/UDP Services in Ingress-NGINX
-Create the ConfigMap in kube-system
-Since your ingress controller is in kube-system, create the ConfigMap there:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: tcp-services
-  namespace: kube-system
-data:
-  "8325": "distributed-cloud/dcagent-api:8325"
-```
-
-Apply it:
+## Create a load balancer with helm
 ```bash
-kubectl apply -f tcp-services.yaml
-```
-
-Modify the Ingress NGINX Deployment to Use the ConfigMap
-You need to update the ingress controller to reference this ConfigMap. Find the deployment:
-
-```bash
-kubectl get deployment -n kube-system -l app.kubernetes.io/name=ingress-nginx
-```
-
-Then edit it:
-```bash
-kubectl edit deployment -n kube-system <your-ingress-nginx-controller>
-```
-
-In the args section of the containers list, add:
-```yaml
-args:
-  - --tcp-services-configmap=kube-system/tcp-services
-```
-Save and exit.
-
-Restart the Ingress Controller
-
-```bash
-kubectl rollout restart deployment -n kube-system <your-ingress-nginx-controller>
-```
-
-Verify That Port 8325 is Now Open Check if the ingress controller is listening on port 8325:
-
-```bash
-kubectl logs -n kube-system -l app.kubernetes.io/name=ingress-nginx | grep "8325"
+cat<<EOF>nginx.yaml
+controller:
+  ingressClassResource:
+    name: dc-nginx
+    controllerValue: "k8s.io/dc-nginx"
+    enabled: true
+  ingressClass: dc-nginx
+  hostNetwork: true
+  service:
+    enabled: false
+  containerPort:
+    http: 8325
+    https: 8327
+  extraArgs:
+    http-port: "8325"
+    https-port: "8327"
+    default-server-port: "81"
+    status-port: "10251"
+    stream-port: "10252"
+    profiler-port: "10253"
+    healthz-port: "10255"
+EOF
 ```
 
 ```bash
-curl -v http://controller:8325/v1/dcaudit -X PATCH -H "Content-Type: application/json" -H "X-Au
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm upgrade --install dc-nginx ingress-nginx/ingress-nginx \
+  --namespace distributed-cloud \
+  --set controller.service.type=LoadBalancer \
+  --set controller.service.httpPort.port=8325 \
+  --set controller.service.httpPort.targetPort=8325
+  --set controller.ingressClassResource.name=dc-nginx
 ```

@@ -44,7 +44,7 @@ network:
     ingress:
       public: true
       classes:
-        namespace: "nginx"
+        namespace: "dc-nginx"
         cluster: "nginx-cluster"
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
@@ -55,12 +55,15 @@ network:
     external_policy_local: false
 
 ingress:
-  className: nginx
-  enabled: false
-  annotations: {}
-  paths: []
+  className: "dc-nginx"
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
-    - controller
+    - host: controller
+      paths:
+        - path: "/"
+          pathType: Prefix
   tls: []
 
 volume: []
