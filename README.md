@@ -294,7 +294,8 @@ kubectl get endpoints dcagent-api -n distributed-cloud
 openstack token issue
 
 # Set TOEKN=token ID get from the previous step
-curl -v http://<endpoint>/v1/dcaudit -X PATCH -H "Content-Type: application/json" -H "X-Auth-Token:$token" -d '{"base_audit": ""}'
+# note: 30325 should be used if request from out of the cluster
+curl -v http://controller:30325/v1/dcaudit -X PATCH -H "Content-Type: application/json" -H "X-Auth-Token:$token" -d '{"base_audit": ""}'
 ```
 
 ## Distributed Cloud Helm Deployment (manual)
@@ -318,40 +319,3 @@ kubectl -n distributed-cloud logs -l application=dcagent,component=api
 
 helm status --show-resources dcagent --namespace distributed-cloud
 
-## Create a load balancer with helm
-```bash
-cat<<EOF>nginx.yaml
-controller:
-  ingressClassResource:
-    name: dc-nginx
-    controllerValue: "k8s.io/dc-nginx"
-    enabled: true
-  ingressClass: dc-nginx
-  hostNetwork: true
-  service:
-    enabled: false
-  containerPort:
-    http: 8325
-    https: 8327
-  extraArgs:
-    http-port: "8325"
-    https-port: "8327"
-    default-server-port: "81"
-    status-port: "10251"
-    stream-port: "10252"
-    profiler-port: "10253"
-    healthz-port: "10255"
-EOF
-```
-
-```bash
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
-
-helm upgrade --install dc-nginx ingress-nginx/ingress-nginx \
-  --namespace distributed-cloud \
-  --set controller.service.type=LoadBalancer \
-  --set controller.service.httpPort.port=8325 \
-  --set controller.service.httpPort.targetPort=8325
-  --set controller.ingressClassResource.name=dc-nginx
-```

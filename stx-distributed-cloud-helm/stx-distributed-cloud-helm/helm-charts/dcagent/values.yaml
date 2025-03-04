@@ -50,13 +50,13 @@ network:
         nginx.ingress.kubernetes.io/rewrite-target: /
     port: 8325
     node_port:
-      enabled: false
+      enabled: true
       port: 30325
     external_policy_local: false
 
 ingress:
-  className: "dc-nginx"
-  enabled: true
+  className: "nginx"
+  enabled: false
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
